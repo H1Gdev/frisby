@@ -126,21 +126,25 @@ class FrisbySpec {
    * Fetch given URL with params (passthru to 'fetch' API)
    */
   fetch(url, params = {}, options = {}) {
+    console.log('fetch' + (this.name ? '[' + this.name + ']' : ''), 'call');
     let fetchParams = this._fetchParams(params);
     this._request = new fetch.Request(this._formatUrl(url, options.urlEncode), fetchParams);
 
     this._fetch = fetch(this._request, { timeout: this.timeout() }) // 'timeout' is a node-fetch option
       .then(response => {
+        console.log('fetch' + (this.name ? '[' + this.name + ']' : ''), 'then_1');
         this._response = new FrisbyResponse(response);
         if (this._setupDefaults.request && this._setupDefaults.request.rawBody) {
           return response.arrayBuffer()
             .then(buffer => {
+              console.log('fetch' + (this.name ? '[' + this.name + ']' : ''), 'then_2');
               this._response._body = buffer;
             });
         }
 
         return response.textConverted()
           .then(text => {
+            console.log('fetch' + (this.name ? '[' + this.name + ']' : ''), 'then_2');
             let response = this._response;
             response._body = text;
             // Auto-parse JSON
@@ -154,6 +158,7 @@ class FrisbySpec {
           });
       })
       .then(() => {
+        console.log('fetch' + (this.name ? '[' + this.name + ']' : ''), 'then_3');
         return this._response;
       });
 
@@ -224,13 +229,17 @@ class FrisbySpec {
    * Chain calls to execute after fetch()
    */
   then(onFulfilled, onRejected) {
+    console.log('then' + (this.name ? '[' + this.name + ']' : ''), 'call(' + onFulfilled + ',' + onRejected + ')');
+    console.trace('then' + (this.name ? '[' + this.name + ']' : ''), 'call');
     if (onFulfilled instanceof FrisbySpec) {
       return onFulfilled;
     }
 
     this._ensureHasFetched();
     this._fetch = this._fetch.then(response => {
+      console.log('then' + (this.name ? '[' + this.name + ']' : ''), 'then(' + onFulfilled + ')');
       let result = onFulfilled ? onFulfilled(response) : null;
+      console.log('then' + (this.name ? '[' + this.name + ']' : ''), 'result=' + (result ? '(ANY)' : result));
 
       if (result) {
         return result;
@@ -246,8 +255,12 @@ class FrisbySpec {
    * Ensures any errors get pass
    */
   done(doneFn) {
+    console.log('done' + (this.name ? '[' + this.name + ']' : ''), 'call');
     this._ensureHasFetched();
-    this._fetch = this._fetch.then(() => doneFn());
+    this._fetch = this._fetch.then(() => {
+      console.log('done' + (this.name ? '[' + this.name + ']' : ''), 'then(' + doneFn + ')');
+      return doneFn();
+    });
     return this;
   }
 
@@ -255,6 +268,7 @@ class FrisbySpec {
    * Custom error handler (Promise catch)
    */
   catch(onRejected) {
+    console.log('catch' + (this.name ? '[' + this.name + ']' : ''), 'call');
     this._ensureHasFetched();
     this._fetch = this._fetch.catch(err => onRejected ? onRejected(err) : Promise.reject(err));
     return this;
@@ -342,6 +356,7 @@ class FrisbySpec {
    * Add expectation for current test (expects)
    */
   expect(expectName) {
+    console.log('expect' + (this.name ? '[' + this.name + ']' : ''), 'call(' + expectName + ')');
     let expectArgs = Array.prototype.slice.call(arguments).slice(1);
     return this.then(this._getExpectRunner(expectName, expectArgs, true));
   }
@@ -350,6 +365,7 @@ class FrisbySpec {
    * Add negative expectation for current test (expects.not)
    */
   expectNot(expectName) {
+    console.log('expectNot' + (this.name ? '[' + this.name + ']' : ''), 'call(' + expectName + ')');
     let expectArgs = Array.prototype.slice.call(arguments).slice(1);
     return this.then(this._getExpectRunner(expectName, expectArgs, false));
   }
